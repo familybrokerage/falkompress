@@ -365,6 +365,7 @@ body::before {
       <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Select PDF
     </button>
+    <p style="color:var(--text-dim);font-size:13px;margin-top:4px;">Files, iCloud, Dropbox, Google Drive, etc.</p>
     <input type="file" accept=".pdf,application/pdf" id="fileInput" class="file-input">
   </div>
 
@@ -451,9 +452,13 @@ body::before {
     </div>
     <div id="errorResult" class="error-msg"></div>
     <div class="btn-group animate-in" style="animation-delay:0.2s;">
-      <button class="btn btn-primary" id="btnDownload">
+      <button class="btn btn-primary" id="btnShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share / Export
+      </button>
+      <button class="btn btn-secondary" id="btnDownload">
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Compressed PDF
+        Save to Device
       </button>
       <button class="btn btn-outline" id="btnAnother">Compress Another</button>
     </div>
@@ -818,22 +823,49 @@ body::before {
     }
   });
 
-  // Download
-  $('btnDownload').addEventListener('click', () => {
+  // Share (native iOS/Android share sheet — email, AirDrop, Messages, Drive, Dropbox, etc.)
+  $('btnShare').addEventListener('click', async () => {
     if (!compressedBytes) return;
     try {
-      const blob = new Blob([compressedBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = compressedFileName;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 1000);
+      const file = new File([compressedBytes], compressedFileName, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: compressedFileName,
+        });
+      } else {
+        // Fallback: trigger download if Web Share API not available
+        triggerDownload();
+      }
+    } catch (err) {
+      // User cancelled share is not an error
+      if (err.name !== 'AbortError') {
+        showError('errorResult', 'Share failed: ' + err.message);
+      }
+    }
+  });
+
+  // Download (save to device)
+  function triggerDownload() {
+    if (!compressedBytes) return;
+    const blob = new Blob([compressedBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = compressedFileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }, 1000);
+  }
+
+  $('btnDownload').addEventListener('click', () => {
+    try {
+      triggerDownload();
     } catch (err) {
       showError('errorResult', 'Download failed: ' + err.message);
     }
