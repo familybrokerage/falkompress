@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Falkompress">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="Compress PDF files entirely in your browser. No uploads, no servers.">
+<title>Falkompress</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRmFsa29tcHJlc3MiLCJzaG9ydF9uYW1lIjoiRmFsa29tcHJlc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWEyZSIsInRoZW1lX2NvbG9yIjoiIzFhMWEyZSJ9">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWExYTJlIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwtYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMwMGQ0YWEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkY8L3RleHQ+PC9zdmc+">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-card-alt: #1c2a4a;
+  --accent: #00d4aa;
+  --accent-glow: rgba(0, 212, 170, 0.25);
+  --accent-dim: rgba(0, 212, 170, 0.6);
+  --text: #e8e8f0;
+  --text-dim: #8888a8;
+  --danger: #ff6b6b;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  flex: 1;
+}
+
+/* Logo */
+.logo {
+  margin-top: 40px;
+  margin-bottom: 8px;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  background: linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  user-select: none;
+}
+
+.tagline {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 48px;
+  letter-spacing: 0.5px;
+}
+
+/* Cards */
+.card {
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.04);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* Screens */
+.screen { display: none; width: 100%; flex-direction: column; align-items: center; }
+.screen.active { display: flex; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 54px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00d4aa, #00b4d8);
+  color: #0a0a1a;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+.btn-primary:active { transform: scale(0.97); filter: brightness(0.9); }
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.btn-secondary {
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.btn-secondary:active { transform: scale(0.97); background: #243353; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+.btn-outline:active { background: var(--accent-glow); transform: scale(0.97); }
+
+/* File input */
+.file-input { display: none; }
+
+/* File info */
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.file-icon {
+  width: 44px; height: 44px;
+  background: var(--accent-glow);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.file-icon svg { width: 22px; height: 22px; }
+.file-name {
+  font-weight: 600;
+  font-size: 15px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+.file-size {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+/* Quality selector */
+.quality-label {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.quality-options {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.quality-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255,255,255,0.08);
+  background: var(--bg-card-alt);
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.quality-btn.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.quality-btn:active { transform: scale(0.96); }
+.quality-desc {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 3px;
+  opacity: 0.7;
+}
+
+/* Progress */
+.progress-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.progress-ring-container {
+  position: relative;
+  width: 120px; height: 120px;
+}
+.progress-ring { transform: rotate(-90deg); }
+.progress-ring-bg { stroke: rgba(255,255,255,0.06); }
+.progress-ring-fg {
+  stroke: url(#progressGrad);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s ease;
+}
+.progress-pct {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+}
+.progress-status {
+  font-size: 15px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* Results */
+.result-sizes {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.result-col { text-align: center; }
+.result-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.result-value {
+  font-size: 22px;
+  font-weight: 800;
+}
+.result-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+  font-size: 22px;
+}
+.ratio-card {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(0,212,170,0.08), rgba(0,180,216,0.08));
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  border: 1px solid rgba(0,212,170,0.15);
+}
+.ratio-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.ratio-value {
+  font-size: 48px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+.ratio-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Error */
+.error-msg {
+  color: var(--danger);
+  background: rgba(255,107,107,0.1);
+  border: 1px solid rgba(255,107,107,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  margin-bottom: 16px;
+  display: none;
+}
+.error-msg.visible { display: block; }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeInUp 0.4s ease forwards; }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 4px 20px var(--accent-glow); }
+  50% { box-shadow: 0 4px 40px rgba(0, 212, 170, 0.45); }
+}
+.pulse { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Canvas (hidden, used for image processing) */
+#imgCanvas { display: none; }
+
+/* Subtle bg pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,212,170,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">Falkompress</div>
+  <div class="tagline">PDF compression, entirely on-device</div>
+
+  <!-- SCREEN: Select -->
+  <div id="screenSelect" class="screen active">
+    <button class="btn btn-primary pulse" id="btnSelect" style="margin-bottom:16px;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Select PDF
+    </button>
+    <input type="file" accept=".pdf,application/pdf" id="fileInput" class="file-input">
+  </div>
+
+  <!-- SCREEN: Configure -->
+  <div id="screenConfig" class="screen">
+    <div class="card animate-in">
+      <div class="file-info">
+        <div class="file-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+          <div class="file-name" id="fileName"></div>
+          <div class="file-size" id="fileSize"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card animate-in" style="animation-delay:0.1s;">
+      <div class="quality-label">Compression Quality</div>
+      <div class="quality-options">
+        <div class="quality-btn" data-quality="high">
+          High
+          <span class="quality-desc">Larger file</span>
+        </div>
+        <div class="quality-btn selected" data-quality="medium">
+          Medium
+          <span class="quality-desc">Balanced</span>
+        </div>
+        <div class="quality-btn" data-quality="low">
+          Low
+          <span class="quality-desc">Smallest</span>
+        </div>
+      </div>
+    </div>
+    <div id="errorConfig" class="error-msg"></div>
+    <button class="btn btn-primary animate-in" style="animation-delay:0.2s;" id="btnCompress">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Compress
+    </button>
+    <button class="btn btn-secondary" style="margin-top:10px;" id="btnChangeFile">Choose Different File</button>
+  </div>
+
+  <!-- SCREEN: Progress -->
+  <div id="screenProgress" class="screen">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="progress-wrap">
+        <div class="progress-ring-container">
+          <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00d4aa"/>
+                <stop offset="100%" stop-color="#00b4d8"/>
+              </linearGradient>
+            </defs>
+            <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+            <circle class="progress-ring-fg" id="progressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8"
+              stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+          </svg>
+          <div class="progress-pct" id="progressPct">0%</div>
+        </div>
+        <div class="progress-status" id="progressStatus">Preparing...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Result -->
+  <div id="screenResult" class="screen">
+    <div class="card animate-in">
+      <div class="result-sizes">
+        <div class="result-col">
+          <div class="result-label">Original</div>
+          <div class="result-value" id="resultOriginal"></div>
+        </div>
+        <div class="result-arrow">&rarr;</div>
+        <div class="result-col">
+          <div class="result-label">Compressed</div>
+          <div class="result-value" id="resultCompressed" style="color:var(--accent);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ratio-card animate-in" style="animation-delay:0.1s;width:100%;">
+      <div class="ratio-label">Reduced by</div>
+      <div class="ratio-value" id="resultRatio"></div>
+      <div class="ratio-sub" id="resultSaved"></div>
+    </div>
+    <div id="errorResult" class="error-msg"></div>
+    <div class="btn-group animate-in" style="animation-delay:0.2s;">
+      <button class="btn btn-primary" id="btnDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Compressed PDF
+      </button>
+      <button class="btn btn-outline" id="btnAnother">Compress Another</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="imgCanvas"></canvas>
+
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  const PRESETS = {
+    high:   { maxDim: 3000, jpegQuality: 0.85 },
+    medium: { maxDim: 2000, jpegQuality: 0.65 },
+    low:    { maxDim: 1200, jpegQuality: 0.40 }
+  };
+
+  // State
+  let selectedFile = null;
+  let selectedQuality = 'medium';
+  let compressedBytes = null;
+  let compressedFileName = '';
+
+  // Elements
+  const $ = id => document.getElementById(id);
+  const screens = {
+    select: $('screenSelect'),
+    config: $('screenConfig'),
+    progress: $('screenProgress'),
+    result: $('screenResult')
+  };
+
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function showError(containerId, msg) {
+    const el = $(containerId);
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+  function hideError(containerId) {
+    $(containerId).classList.remove('visible');
+  }
+
+  // File selection
+  $('btnSelect').addEventListener('click', () => $('fileInput').click());
+  $('btnChangeFile').addEventListener('click', () => {
+    $('fileInput').value = '';
+    $('fileInput').click();
+  });
+
+  $('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      alert('Please select a PDF file.');
+      return;
+    }
+    selectedFile = file;
+    $('fileName').textContent = file.name;
+    $('fileSize').textContent = formatSize(file.size);
+    hideError('errorConfig');
+    showScreen('config');
+  });
+
+  // Quality selection
+  document.querySelectorAll('.quality-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedQuality = btn.dataset.quality;
+    });
+  });
+
+  // Progress helpers
+  const CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
+  function setProgress(pct, status) {
+    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+    $('progressCircle').style.strokeDashoffset = offset;
+    $('progressPct').textContent = Math.round(pct) + '%';
+    if (status) $('progressStatus').textContent = status;
+  }
+
+  // Compress
+  $('btnCompress').addEventListener('click', async () => {
+    if (!selectedFile) return;
+    hideError('errorConfig');
+    showScreen('progress');
+    setProgress(0, 'Reading file...');
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const inputBytes = new Uint8Array(arrayBuffer);
+      setProgress(10, 'Parsing PDF...');
+
+      const { PDFDocument, PDFName, PDFRawStream, PDFDict, PDFArray, PDFNumber } = PDFLib;
+      const pdfDoc = await PDFDocument.load(inputBytes, { ignoreEncryption: true });
+
+      // Strip metadata
+      setProgress(15, 'Stripping metadata...');
+      pdfDoc.setTitle('');
+      pdfDoc.setAuthor('');
+      pdfDoc.setSubject('');
+      pdfDoc.setKeywords([]);
+      pdfDoc.setCreator('');
+      pdfDoc.setProducer('');
+
+      // Process images
+      setProgress(20, 'Scanning for images...');
+      const preset = PRESETS[selectedQuality];
+      const canvas = $('imgCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Enumerate all indirect objects looking for image XObjects
+      const enumeratedObjects = pdfDoc.context.enumerateIndirectObjects();
+      const imageObjects = [];
+
+      for (const [ref, obj] of enumeratedObjects) {
+        try {
+          if (obj instanceof PDFLib.PDFRawStream || (obj && obj.dict)) {
+            const dict = obj.dict || obj;
+            if (dict && typeof dict.get === 'function') {
+              const subtype = dict.get(PDFName.of('Subtype'));
+              if (subtype && subtype.toString() === '/Image') {
+                imageObjects.push({ ref, stream: obj, dict });
+              }
+            }
+          }
+        } catch (_) { /* skip */ }
+      }
+
+      const totalImages = imageObjects.length;
+      let processedImages = 0;
+      let compressedImageCount = 0;
+
+      for (const imgObj of imageObjects) {
+        processedImages++;
+        const pct = 20 + (processedImages / Math.max(totalImages, 1)) * 60;
+        setProgress(pct, `Processing image ${processedImages} of ${totalImages}...`);
+
+        try {
+          const dict = imgObj.dict;
+          const width = dict.get(PDFName.of('Width'));
+          const height = dict.get(PDFName.of('Height'));
+          if (!width || !height) continue;
+
+          const w = width instanceof PDFNumber ? width.asNumber() : (typeof width.value === 'function' ? width.value() : parseInt(width.toString()));
+          const h = height instanceof PDFNumber ? height.asNumber() : (typeof height.value === 'function' ? height.value() : parseInt(height.toString()));
+
+          if (isNaN(w) || isNaN(h) || w < 10 || h < 10) continue;
+
+          // Get filter info
+          const filter = dict.get(PDFName.of('Filter'));
+          const filterStr = filter ? filter.toString() : '';
+          const colorSpace = dict.get(PDFName.of('ColorSpace'));
+          const colorSpaceStr = colorSpace ? colorSpace.toString() : '/DeviceRGB';
+          const bitsPerComponent = dict.get(PDFName.of('BitsPerComponent'));
+          const bpc = bitsPerComponent ? (bitsPerComponent instanceof PDFNumber ? bitsPerComponent.asNumber() : parseInt(bitsPerComponent.toString())) : 8;
+
+          // Get raw stream contents
+          let rawData;
+          if (imgObj.stream && imgObj.stream.contents) {
+            rawData = imgObj.stream.contents;
+          } else if (imgObj.stream && imgObj.stream.getContents) {
+            rawData = imgObj.stream.getContents();
+          } else {
+            continue;
+          }
+
+          if (!rawData || rawData.length < 100) continue;
+
+          let imageData = null;
+
+          // Handle DCTDecode (JPEG) — data is already a JPEG
+          if (filterStr.includes('DCTDecode')) {
+            // For JPEG images, decode via browser
+            try {
+              const blob = new Blob([rawData], { type: 'image/jpeg' });
+              const imgBitmap = await createImageBitmap(blob);
+              imageData = { bitmap: imgBitmap, origW: imgBitmap.width, origH: imgBitmap.height };
+            } catch (_) { continue; }
+          }
+          // Handle FlateDecode — raw pixel data compressed with zlib
+          else if (filterStr.includes('FlateDecode') && !filterStr.includes('CCITTFaxDecode') && !filterStr.includes('JBIG2Decode')) {
+            try {
+              const decoded = pako.inflate(rawData);
+              // Determine channels
+              let channels = 3;
+              if (colorSpaceStr.includes('Gray') || colorSpaceStr.includes('CalGray')) channels = 1;
+              else if (colorSpaceStr.includes('CMYK')) channels = 4;
+              else if (colorSpaceStr.includes('RGB') || colorSpaceStr.includes('CalRGB')) channels = 3;
+
+              const expectedLen = w * h * channels * (bpc / 8);
+              // Allow some slack for row padding
+              if (decoded.length < expectedLen * 0.8 || decoded.length > expectedLen * 1.5) continue;
+
+              // Build ImageData
+              const pixelData = new Uint8ClampedArray(w * h * 4);
+              for (let i = 0; i < w * h; i++) {
+                if (channels === 3) {
+                  pixelData[i*4]   = decoded[i*3];
+                  pixelData[i*4+1] = decoded[i*3+1];
+                  pixelData[i*4+2] = decoded[i*3+2];
+                  pixelData[i*4+3] = 255;
+                } else if (channels === 1) {
+                  const v = decoded[i];
+                  pixelData[i*4] = pixelData[i*4+1] = pixelData[i*4+2] = v;
+                  pixelData[i*4+3] = 255;
+                } else if (channels === 4) {
+                  // CMYK to RGB
+                  const c = decoded[i*4] / 255;
+                  const m = decoded[i*4+1] / 255;
+                  const y = decoded[i*4+2] / 255;
+                  const k = decoded[i*4+3] / 255;
+                  pixelData[i*4]   = 255 * (1-c) * (1-k);
+                  pixelData[i*4+1] = 255 * (1-m) * (1-k);
+                  pixelData[i*4+2] = 255 * (1-y) * (1-k);
+                  pixelData[i*4+3] = 255;
+                } else {
+                  continue;
+                }
+              }
+              const imgData = new ImageData(pixelData, w, h);
+              canvas.width = w;
+              canvas.height = h;
+              ctx.putImageData(imgData, 0, 0);
+              const bmp = await createImageBitmap(canvas);
+              imageData = { bitmap: bmp, origW: w, origH: h };
+            } catch (_) { continue; }
+          }
+          // No filter — raw pixels
+          else if (!filterStr || filterStr === '/' || filterStr === '[]') {
+            try {
+              let channels = 3;
+              if (colorSpaceStr.includes('Gray')) channels = 1;
+              const pixelData = new Uint8ClampedArray(w * h * 4);
+              for (let i = 0; i < w * h; i++) {
+                if (channels === 3) {
+                  pixelData[i*4]   = rawData[i*3];
+                  pixelData[i*4+1] = rawData[i*3+1];
+                  pixelData[i*4+2] = rawData[i*3+2];
+                  pixelData[i*4+3] = 255;
+                } else {
+                  pixelData[i*4] = pixelData[i*4+1] = pixelData[i*4+2] = rawData[i];
+                  pixelData[i*4+3] = 255;
+                }
+              }
+              const imgData = new ImageData(pixelData, w, h);
+              canvas.width = w;
+              canvas.height = h;
+              ctx.putImageData(imgData, 0, 0);
+              const bmp = await createImageBitmap(canvas);
+              imageData = { bitmap: bmp, origW: w, origH: h };
+            } catch (_) { continue; }
+          } else {
+            // Unsupported filter
+            continue;
+          }
+
+          if (!imageData) continue;
+
+          // Determine new dimensions
+          let newW = imageData.origW;
+          let newH = imageData.origH;
+          const maxDim = preset.maxDim;
+
+          if (newW > maxDim || newH > maxDim) {
+            const scale = maxDim / Math.max(newW, newH);
+            newW = Math.round(newW * scale);
+            newH = Math.round(newH * scale);
+          }
+
+          // Skip if image is already small and was JPEG with similar or smaller size
+          const minWorthwhile = filterStr.includes('DCTDecode') && newW >= imageData.origW && newH >= imageData.origH;
+
+          // Draw to canvas at new size
+          canvas.width = newW;
+          canvas.height = newH;
+          ctx.clearRect(0, 0, newW, newH);
+          ctx.drawImage(imageData.bitmap, 0, 0, newW, newH);
+
+          // Encode as JPEG
+          const jpegDataUrl = canvas.toDataURL('image/jpeg', preset.jpegQuality);
+          const jpegBase64 = jpegDataUrl.split(',')[1];
+          const jpegBinary = Uint8Array.from(atob(jpegBase64), c => c.charCodeAt(0));
+
+          // Only replace if we actually reduced size or are resizing
+          if (minWorthwhile && jpegBinary.length >= rawData.length * 0.95) continue;
+
+          // Replace the stream in the PDF object
+          // Build a new dict for this image
+          const newDict = imgObj.stream.dict.clone(pdfDoc.context);
+          newDict.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
+          newDict.set(PDFName.of('Width'), PDFLib.PDFNumber.of(newW));
+          newDict.set(PDFName.of('Height'), PDFLib.PDFNumber.of(newH));
+          newDict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
+          newDict.set(PDFName.of('BitsPerComponent'), PDFLib.PDFNumber.of(8));
+          newDict.set(PDFName.of('Length'), PDFLib.PDFNumber.of(jpegBinary.length));
+          // Remove decode params that don't apply to JPEG
+          newDict.delete(PDFName.of('DecodeParms'));
+          newDict.delete(PDFName.of('Predictor'));
+
+          const newStream = PDFLib.PDFRawStream.of(newDict, jpegBinary);
+          pdfDoc.context.assign(imgObj.ref, newStream);
+
+          compressedImageCount++;
+          imageData.bitmap.close && imageData.bitmap.close();
+        } catch (imgErr) {
+          // Skip this image and continue
+          continue;
+        }
+      }
+
+      // Save with object streams
+      setProgress(85, 'Saving compressed PDF...');
+      const savedBytes = await pdfDoc.save({ useObjectStreams: true });
+      compressedBytes = savedBytes;
+
+      setProgress(95, 'Finalizing...');
+
+      // Build result
+      const origSize = selectedFile.size;
+      const newSize = compressedBytes.length;
+      const reduction = origSize > 0 ? ((origSize - newSize) / origSize * 100) : 0;
+      const saved = origSize - newSize;
+
+      $('resultOriginal').textContent = formatSize(origSize);
+      $('resultCompressed').textContent = formatSize(newSize);
+
+      if (reduction > 0) {
+        $('resultRatio').textContent = reduction.toFixed(1) + '%';
+        $('resultSaved').textContent = formatSize(saved) + ' saved';
+      } else {
+        $('resultRatio').textContent = '0%';
+        $('resultSaved').textContent = 'File could not be reduced further';
+      }
+
+      // Prepare filename
+      const baseName = selectedFile.name.replace(/\.pdf$/i, '');
+      compressedFileName = baseName + '_compressed.pdf';
+
+      setProgress(100, 'Done!');
+      await new Promise(r => setTimeout(r, 400));
+      hideError('errorResult');
+      showScreen('result');
+
+    } catch (err) {
+      console.error('Compression error:', err);
+      showScreen('config');
+      showError('errorConfig', 'Compression failed: ' + (err.message || 'Unknown error. The PDF may be encrypted or malformed.'));
+    }
+  });
+
+  // Download
+  $('btnDownload').addEventListener('click', () => {
+    if (!compressedBytes) return;
+    try {
+      const blob = new Blob([compressedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = compressedFileName;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 1000);
+    } catch (err) {
+      showError('errorResult', 'Download failed: ' + err.message);
+    }
+  });
+
+  // Compress Another
+  $('btnAnother').addEventListener('click', () => {
+    selectedFile = null;
+    compressedBytes = null;
+    compressedFileName = '';
+    $('fileInput').value = '';
+    setProgress(0, 'Preparing...');
+    showScreen('select');
+  });
+
+})();
+</script>
+</body>
+</html>
