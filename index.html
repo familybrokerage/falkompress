@@ -832,7 +832,6 @@ body::before {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: compressedFileName,
         });
       } else {
         // Fallback: trigger download if Web Share API not available
