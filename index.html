@@ -2,38 +2,52 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Falkompress">
 <meta name="theme-color" content="#1a1a2e">
-<meta name="description" content="Compress PDF files entirely in your browser. No uploads, no servers.">
+<meta name="description" content="PDF tools entirely in your browser. Compress, edit pages, merge, split, unlock. No uploads.">
 <title>Falkompress</title>
 <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRmFsa29tcHJlc3MiLCJzaG9ydF9uYW1lIjoiRmFsa29tcHJlc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWEyZSIsInRoZW1lX2NvbG9yIjoiIzFhMWEyZSJ9">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWExYTJlIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwtYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iODAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMwMGQ0YWEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkY8L3RleHQ+PC9zdmc+">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --bg: #1a1a2e;
+  --bg-elev: #0f1020;
   --bg-card: #16213e;
   --bg-card-alt: #1c2a4a;
   --accent: #00d4aa;
+  --accent-2: #00b4d8;
   --accent-glow: rgba(0, 212, 170, 0.25);
   --accent-dim: rgba(0, 212, 170, 0.6);
   --text: #e8e8f0;
   --text-dim: #8888a8;
+  --text-faint: #5a5a78;
   --danger: #ff6b6b;
+  --warn: #ffb86b;
   --radius: 16px;
   --radius-sm: 10px;
+  --tab-bar-height: 72px;
+
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
 }
 
 html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01' on, 'ss02' on;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
 }
@@ -44,7 +58,36 @@ body {
   align-items: center;
   min-height: 100vh;
   min-height: -webkit-fill-available;
-  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+  padding:
+    env(safe-area-inset-top)
+    16px
+    calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 12px)
+    16px;
+}
+
+/* Decorative background glow */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,212,170,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0,180,216,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -2;
+}
+
+/* Subtle grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .container {
@@ -53,29 +96,37 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 0;
+  padding: 16px 0;
   flex: 1;
 }
 
-/* Logo */
+/* Header / wordmark */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 28px;
+  margin-bottom: 36px;
+  user-select: none;
+}
 .logo {
-  margin-top: 40px;
-  margin-bottom: 8px;
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  background: linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 46px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 70%, #c0a8ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  user-select: none;
 }
-
 .tagline {
   color: var(--text-dim);
-  font-size: 14px;
-  margin-bottom: 48px;
-  letter-spacing: 0.5px;
+  font-size: 13px;
+  margin-top: 8px;
+  letter-spacing: 0.4px;
+  font-weight: 400;
 }
 
 /* Cards */
@@ -83,14 +134,23 @@ body {
   width: 100%;
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 24px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  padding: 22px;
+  margin-bottom: 14px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.02) inset,
+    0 8px 32px rgba(0,0,0,0.35);
   border: 1px solid rgba(255,255,255,0.04);
-  transition: opacity 0.3s, transform 0.3s;
 }
 
-/* Screens */
+/* Tab routing */
+.tab {
+  display: none;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+.tab.active { display: flex; }
+
 .screen { display: none; width: 100%; flex-direction: column; align-items: center; }
 .screen.active { display: flex; }
 
@@ -99,57 +159,67 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   min-height: 54px;
   padding: 14px 24px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 17px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  letter-spacing: -0.1px;
 }
-
 .btn-primary {
-  background: linear-gradient(135deg, #00d4aa, #00b4d8);
-  color: #0a0a1a;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #061018;
+  box-shadow: 0 6px 24px var(--accent-glow);
 }
-.btn-primary:active { transform: scale(0.97); filter: brightness(0.9); }
+.btn-primary:active { transform: scale(0.97); filter: brightness(0.92); }
 .btn-primary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
   filter: none;
+  box-shadow: none;
 }
-
 .btn-secondary {
   background: var(--bg-card-alt);
   color: var(--text);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 .btn-secondary:active { transform: scale(0.97); background: #243353; }
-
 .btn-outline {
   background: transparent;
   color: var(--accent);
-  border: 2px solid var(--accent);
+  border: 1.5px solid var(--accent);
 }
 .btn-outline:active { background: var(--accent-glow); transform: scale(0.97); }
+.btn-danger {
+  background: rgba(255,107,107,0.10);
+  color: var(--danger);
+  border: 1px solid rgba(255,107,107,0.2);
+}
+.btn-danger:active { background: rgba(255,107,107,0.18); transform: scale(0.97); }
 
-/* File input */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
 .file-input { display: none; }
 
-/* File info */
+/* File info card */
 .file-info {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 6px;
 }
 .file-icon {
   width: 44px; height: 44px;
@@ -163,50 +233,54 @@ body {
   font-weight: 600;
   font-size: 15px;
   word-break: break-all;
-  line-height: 1.3;
+  line-height: 1.35;
+  letter-spacing: -0.1px;
 }
 .file-size {
   color: var(--text-dim);
-  font-size: 14px;
-  margin-top: 2px;
+  font-size: 13px;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-weight: 400;
 }
 
 /* Quality selector */
-.quality-label {
-  font-size: 14px;
+.opt-label {
+  font-size: 11px;
   color: var(--text-dim);
   margin-bottom: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.4px;
 }
-.quality-options {
+.quality-options, .seg-options {
   display: flex;
   gap: 8px;
   width: 100%;
 }
-.quality-btn {
+.quality-btn, .seg-btn {
   flex: 1;
   padding: 12px 8px;
   border-radius: var(--radius-sm);
-  border: 2px solid rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.06);
   background: var(--bg-card-alt);
   color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s;
+  transition: all 0.18s;
   -webkit-user-select: none;
   user-select: none;
 }
-.quality-btn.selected {
+.quality-btn.selected, .seg-btn.selected {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-glow);
-  box-shadow: 0 0 16px var(--accent-glow);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
-.quality-btn:active { transform: scale(0.96); }
+.quality-btn:active, .seg-btn:active { transform: scale(0.96); }
 .quality-desc {
   display: block;
   font-size: 11px;
@@ -215,7 +289,41 @@ body {
   opacity: 0.7;
 }
 
-/* Progress */
+/* Inputs */
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-card-alt);
+  border: 1.5px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  outline: none;
+  transition: all 0.18s;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.input::placeholder { color: var(--text-faint); }
+
+/* Hint text */
+.hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* Empty state CTAs */
+.empty-cta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+.empty-cta .hint { text-align: center; margin-top: 10px; }
+
+/* Progress ring */
 .progress-wrap {
   width: 100%;
   display: flex;
@@ -239,647 +347,867 @@ body {
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--accent);
+  font-feature-settings: 'tnum';
 }
 .progress-status {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-dim);
   text-align: center;
 }
 
-/* Results */
+/* Result sizes */
 .result-sizes {
   display: flex;
   justify-content: space-around;
+  align-items: center;
   width: 100%;
-  margin-bottom: 16px;
+  gap: 8px;
 }
-.result-col { text-align: center; }
+.result-col { text-align: center; flex: 1; }
 .result-label {
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.6px;
   color: var(--text-dim);
   margin-bottom: 6px;
   font-weight: 600;
 }
 .result-value {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.5px;
 }
 .result-arrow {
-  display: flex;
-  align-items: center;
-  color: var(--text-dim);
-  font-size: 22px;
+  color: var(--text-faint);
+  font-size: 20px;
 }
 .ratio-card {
   text-align: center;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(0,212,170,0.08), rgba(0,180,216,0.08));
+  padding: 22px 20px;
+  background: linear-gradient(135deg, rgba(0,212,170,0.10), rgba(0,180,216,0.06));
   border-radius: var(--radius-sm);
-  margin-bottom: 20px;
-  border: 1px solid rgba(0,212,170,0.15);
+  margin-bottom: 14px;
+  border: 1px solid rgba(0,212,170,0.18);
+  width: 100%;
 }
 .ratio-label {
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.6px;
   color: var(--text-dim);
   margin-bottom: 6px;
   font-weight: 600;
 }
 .ratio-value {
-  font-size: 48px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 56px;
+  font-weight: 400;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1.1;
+  line-height: 1.05;
+  letter-spacing: -1.5px;
 }
 .ratio-sub {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   margin-top: 4px;
-}
-.btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+  font-family: var(--font-mono);
 }
 
 /* Error */
 .error-msg {
   color: var(--danger);
-  background: rgba(255,107,107,0.1);
+  background: rgba(255,107,107,0.10);
   border: 1px solid rgba(255,107,107,0.2);
   border-radius: var(--radius-sm);
-  padding: 14px 18px;
-  font-size: 14px;
+  padding: 12px 16px;
+  font-size: 13px;
   line-height: 1.5;
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: none;
 }
 .error-msg.visible { display: block; }
 
+/* ----- Page editor (Pages tab) ----- */
+.page-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+.page-row {
+  display: grid;
+  grid-template-columns: 24px 72px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 8px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  touch-action: pan-y;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s, background 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.page-row.dragging {
+  opacity: 0.92;
+  transform: scale(1.02);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 0 1.5px var(--accent);
+  background: var(--bg-card-alt);
+  z-index: 50;
+}
+.page-row.drop-target {
+  box-shadow: 0 -2px 0 var(--accent);
+}
+.drag-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--text-faint);
+  cursor: grab;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 0.6;
+  touch-action: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.page-thumb {
+  width: 60px;
+  height: 78px;
+  background: #fff;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+  position: relative;
+}
+.page-thumb img, .page-thumb canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.page-thumb-loading {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.page-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.page-meta-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+.page-meta-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+.page-meta-source {
+  font-size: 10px;
+  color: var(--accent);
+  font-style: italic;
+  margin-top: 2px;
+}
+.page-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--bg-card-alt);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+.icon-btn:active { transform: scale(0.92); background: #2a3a5e; }
+.icon-btn.danger { color: var(--danger); }
+.icon-btn.danger:active { background: rgba(255,107,107,0.12); }
+.icon-btn svg { width: 16px; height: 16px; }
+
+.insert-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 8px;
+  margin: -4px 0;
+  position: relative;
+  opacity: 0;
+  transition: all 0.2s;
+}
+.insert-rail::before {
+  content: '+';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: #061018;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px var(--accent-glow);
+  transition: transform 0.18s;
+  cursor: pointer;
+}
+.insert-rail:hover, .insert-rail.show {
+  opacity: 1;
+  height: 28px;
+  margin: 6px 0;
+}
+.page-list:hover .insert-rail { opacity: 0.7; }
+.page-list:hover .insert-rail:hover { opacity: 1; }
+
+/* Stats bar */
+.stats-bar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.stats-bar .stats-key { color: var(--text-dim); }
+.stats-bar .stats-val { font-family: var(--font-mono); font-weight: 500; }
+.stats-bar .stats-delta { color: var(--accent); }
+
+/* Sticky action footer for editor */
+.editor-actions {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* Merge list */
+.merge-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.merge-row {
+  display: grid;
+  grid-template-columns: 24px 38px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  touch-action: pan-y;
+  user-select: none;
+}
+.merge-row.dragging {
+  opacity: 0.92;
+  transform: scale(1.02);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 0 1.5px var(--accent);
+  z-index: 50;
+}
+.merge-row-icon {
+  width: 38px; height: 38px;
+  background: rgba(0,180,216,0.12);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.merge-row-icon svg { width: 18px; height: 18px; }
+.merge-row-meta { min-width: 0; }
+.merge-row-name {
+  font-size: 14px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+.merge-row-size {
+  font-size: 11px; color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* Tab bar */
+.tab-bar {
+  position: fixed;
+  left: 50%;
+  bottom: env(safe-area-inset-bottom, 8px);
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 480px;
+  height: var(--tab-bar-height);
+  padding: 6px;
+  display: flex;
+  align-items: stretch;
+  z-index: 100;
+  background: rgba(15, 16, 32, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 12px 40px rgba(0,0,0,0.45),
+    0 1px 0 rgba(255,255,255,0.04) inset;
+}
+.tab-bar-item {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: color 0.2s, background 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  padding: 4px 2px;
+  position: relative;
+}
+.tab-bar-item svg {
+  width: 22px; height: 22px;
+  stroke: currentColor;
+  transition: transform 0.2s;
+}
+.tab-bar-item.active {
+  color: var(--accent);
+  background: rgba(0, 212, 170, 0.10);
+}
+.tab-bar-item.active svg {
+  transform: translateY(-1px);
+}
+.tab-bar-item:active { transform: scale(0.94); }
+.tab-bar-item .label {
+  font-feature-settings: 'ss01' on;
+}
+
 /* Animations */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-in { animation: fadeInUp 0.4s ease forwards; }
+.animate-in {
+  animation: fadeInUp 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 4px 20px var(--accent-glow); }
-  50% { box-shadow: 0 4px 40px rgba(0, 212, 170, 0.45); }
+  0%, 100% { box-shadow: 0 6px 24px var(--accent-glow); }
+  50% { box-shadow: 0 6px 44px rgba(0, 212, 170, 0.45); }
 }
-.pulse { animation: pulse-glow 2s ease-in-out infinite; }
+.pulse { animation: pulse-glow 2.4s ease-in-out infinite; }
 
-/* Canvas (hidden, used for image processing) */
 #imgCanvas { display: none; }
 
-/* Subtle bg pattern */
-body::before {
-  content: '';
+/* Modal */
+.modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(0,212,170,0.06) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: -1;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
 }
+.modal-backdrop.visible { display: flex; }
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: fadeInUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.modal-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+/* Scroll lock when modal visible */
+body.modal-open { overflow: hidden; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="logo">Falkompress</div>
-  <div class="tagline">PDF compression, entirely on-device</div>
-
-  <!-- SCREEN: Select -->
-  <div id="screenSelect" class="screen active">
-    <button class="btn btn-primary pulse" id="btnSelect" style="margin-bottom:16px;">
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Select PDF
-    </button>
-    <p style="color:var(--text-dim);font-size:13px;margin-top:4px;">Files, iCloud, Dropbox, Google Drive, etc.</p>
-    <input type="file" accept=".pdf,application/pdf" id="fileInput" class="file-input">
+  <div class="brand">
+    <h1 class="logo">Falkompress</h1>
+    <p class="tagline">PDF tools, entirely on-device</p>
   </div>
 
-  <!-- SCREEN: Configure -->
-  <div id="screenConfig" class="screen">
-    <div class="card animate-in">
-      <div class="file-info">
-        <div class="file-icon">
-          <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div>
-          <div class="file-name" id="fileName"></div>
-          <div class="file-size" id="fileSize"></div>
-        </div>
-      </div>
-    </div>
-    <div class="card animate-in" style="animation-delay:0.1s;">
-      <div class="quality-label">Compression Quality</div>
-      <div class="quality-options">
-        <div class="quality-btn" data-quality="high">
-          High
-          <span class="quality-desc">Larger file</span>
-        </div>
-        <div class="quality-btn selected" data-quality="medium">
-          Medium
-          <span class="quality-desc">Balanced</span>
-        </div>
-        <div class="quality-btn" data-quality="low">
-          Low
-          <span class="quality-desc">Smallest</span>
-        </div>
-      </div>
-    </div>
-    <div id="errorConfig" class="error-msg"></div>
-    <button class="btn btn-primary animate-in" style="animation-delay:0.2s;" id="btnCompress">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-      Compress
-    </button>
-    <button class="btn btn-secondary" style="margin-top:10px;" id="btnChangeFile">Choose Different File</button>
-  </div>
+  <!-- ===================== COMPRESS TAB ===================== -->
+  <div id="tabCompress" class="tab active" data-tab="compress">
 
-  <!-- SCREEN: Progress -->
-  <div id="screenProgress" class="screen">
-    <div class="card" style="display:flex;flex-direction:column;align-items:center;">
-      <div class="progress-wrap">
-        <div class="progress-ring-container">
-          <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
-            <defs>
-              <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#00d4aa"/>
-                <stop offset="100%" stop-color="#00b4d8"/>
-              </linearGradient>
-            </defs>
-            <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
-            <circle class="progress-ring-fg" id="progressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8"
-              stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
-          </svg>
-          <div class="progress-pct" id="progressPct">0%</div>
-        </div>
-        <div class="progress-status" id="progressStatus">Preparing...</div>
-      </div>
+    <div id="cmpSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnCmpSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Select PDF
+      </button>
+      <p class="hint" style="text-align:center;">Files, iCloud, Dropbox, Google Drive, etc.</p>
+      <input type="file" accept=".pdf,application/pdf" id="cmpFile" class="file-input">
     </div>
-  </div>
 
-  <!-- SCREEN: Result -->
-  <div id="screenResult" class="screen">
-    <div class="card animate-in">
-      <div class="result-sizes">
-        <div class="result-col">
-          <div class="result-label">Original</div>
-          <div class="result-value" id="resultOriginal"></div>
+    <div id="cmpConfig" class="screen">
+      <div class="card animate-in">
+        <div class="file-info">
+          <div class="file-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div>
+            <div class="file-name" id="cmpFileName"></div>
+            <div class="file-size" id="cmpFileSize"></div>
+          </div>
         </div>
-        <div class="result-arrow">&rarr;</div>
-        <div class="result-col">
-          <div class="result-label">Compressed</div>
-          <div class="result-value" id="resultCompressed" style="color:var(--accent);"></div>
+      </div>
+      <div class="card animate-in" style="animation-delay:0.08s;">
+        <div class="opt-label">Compression Quality</div>
+        <div class="quality-options" id="cmpQuality">
+          <div class="quality-btn" data-quality="high">High<span class="quality-desc">Larger file</span></div>
+          <div class="quality-btn selected" data-quality="medium">Medium<span class="quality-desc">Balanced</span></div>
+          <div class="quality-btn" data-quality="low">Low<span class="quality-desc">Smallest</span></div>
+        </div>
+      </div>
+      <div id="cmpError" class="error-msg"></div>
+      <button class="btn btn-primary animate-in" style="animation-delay:0.16s;" id="btnCmpRun">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Compress
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnCmpChange">Choose Different File</button>
+    </div>
+
+    <div id="cmpProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00d4aa"/>
+                  <stop offset="100%" stop-color="#00b4d8"/>
+                </linearGradient>
+              </defs>
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="cmpProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="cmpProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="cmpProgressStatus">Preparing…</div>
         </div>
       </div>
     </div>
-    <div class="ratio-card animate-in" style="animation-delay:0.1s;width:100%;">
-      <div class="ratio-label">Reduced by</div>
-      <div class="ratio-value" id="resultRatio"></div>
-      <div class="ratio-sub" id="resultSaved"></div>
-    </div>
-    <div id="errorResult" class="error-msg"></div>
-    <div class="btn-group animate-in" style="animation-delay:0.2s;">
-      <button class="btn btn-primary" id="btnDownload">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+
+    <div id="cmpResult" class="screen">
+      <div class="card animate-in">
+        <div class="result-sizes">
+          <div class="result-col">
+            <div class="result-label">Original</div>
+            <div class="result-value" id="cmpResOrig"></div>
+          </div>
+          <div class="result-arrow">&rarr;</div>
+          <div class="result-col">
+            <div class="result-label">Compressed</div>
+            <div class="result-value" id="cmpResNew" style="color:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ratio-card animate-in" style="animation-delay:0.08s;">
+        <div class="ratio-label">Reduced by</div>
+        <div class="ratio-value" id="cmpResRatio"></div>
+        <div class="ratio-sub" id="cmpResSaved"></div>
+      </div>
+      <div id="cmpResError" class="error-msg"></div>
+      <button class="btn btn-primary animate-in" style="animation-delay:0.16s;" id="btnCmpDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Save to Files
       </button>
-      <button class="btn btn-secondary" id="btnShare">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share (Email, AirDrop, etc.)
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnCmpShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
       </button>
-      <button class="btn btn-outline" id="btnAnother">Compress Another</button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnCmpAgain">Compress Another</button>
+    </div>
+  </div>
+
+  <!-- ===================== PAGES TAB ===================== -->
+  <div id="tabPages" class="tab" data-tab="pages">
+
+    <div id="pgSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnPgSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 14l2 2 4-4"/></svg>
+        Select PDF
+      </button>
+      <p class="hint" style="text-align:center;">Delete, reorder, or insert pages.<br>Replaces nothing — saves a new file.</p>
+      <input type="file" accept=".pdf,application/pdf" id="pgFile" class="file-input">
+      <input type="file" accept=".pdf,application/pdf" id="pgInsertFile" class="file-input">
+    </div>
+
+    <div id="pgEditor" class="screen">
+      <div class="stats-bar animate-in" id="pgStats">
+        <span><span class="stats-key">Pages</span> <span class="stats-val" id="pgStatsCount">0</span></span>
+        <span class="stats-delta" id="pgStatsDelta"></span>
+      </div>
+      <div class="page-list animate-in" id="pgList" style="animation-delay:0.08s;"></div>
+      <div id="pgError" class="error-msg" style="margin-top:14px;"></div>
+      <div class="editor-actions animate-in" style="animation-delay:0.16s;">
+        <button class="btn btn-secondary" id="btnPgCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnPgSave">Save</button>
+      </div>
+    </div>
+
+    <div id="pgProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="pgProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="pgProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="pgProgressStatus">Assembling…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pgResult" class="screen">
+      <div class="card animate-in">
+        <div class="result-sizes">
+          <div class="result-col">
+            <div class="result-label">Pages</div>
+            <div class="result-value" id="pgResPages"></div>
+          </div>
+          <div class="result-arrow">·</div>
+          <div class="result-col">
+            <div class="result-label">Size</div>
+            <div class="result-value" id="pgResSize" style="color:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary animate-in" id="btnPgDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save to Files
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnPgShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnPgAgain">Edit Another</button>
+    </div>
+  </div>
+
+  <!-- ===================== MERGE TAB ===================== -->
+  <div id="tabMerge" class="tab" data-tab="merge">
+
+    <div id="mgSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnMgSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Select PDFs
+      </button>
+      <p class="hint" style="text-align:center;">Combine multiple PDFs into one.<br>Drag to reorder before merging.</p>
+      <input type="file" accept=".pdf,application/pdf" id="mgFiles" class="file-input" multiple>
+    </div>
+
+    <div id="mgList" class="screen">
+      <div class="stats-bar animate-in">
+        <span><span class="stats-key">Files</span> <span class="stats-val" id="mgStatsCount">0</span></span>
+        <span><span class="stats-val" id="mgStatsSize"></span></span>
+      </div>
+      <div class="merge-list animate-in" id="mgRows" style="animation-delay:0.08s;"></div>
+      <button class="btn btn-secondary" style="margin-top:14px;" id="btnMgAdd">＋ Add more files</button>
+      <div id="mgError" class="error-msg" style="margin-top:14px;"></div>
+      <div class="editor-actions animate-in" style="animation-delay:0.16s;">
+        <button class="btn btn-secondary" id="btnMgClear">Clear</button>
+        <button class="btn btn-primary" id="btnMgRun">Merge</button>
+      </div>
+    </div>
+
+    <div id="mgProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="mgProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="mgProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="mgProgressStatus">Merging…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mgResult" class="screen">
+      <div class="card animate-in">
+        <div class="result-sizes">
+          <div class="result-col">
+            <div class="result-label">Files</div>
+            <div class="result-value" id="mgResCount"></div>
+          </div>
+          <div class="result-arrow">&rarr;</div>
+          <div class="result-col">
+            <div class="result-label">Merged</div>
+            <div class="result-value" id="mgResSize" style="color:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary animate-in" id="btnMgDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save to Files
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnMgShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnMgAgain">Merge More</button>
+    </div>
+  </div>
+
+  <!-- ===================== SPLIT TAB ===================== -->
+  <div id="tabSplit" class="tab" data-tab="split">
+
+    <div id="spSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnSpSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Select PDF
+      </button>
+      <p class="hint" style="text-align:center;">Extract specific pages, or split every page.</p>
+      <input type="file" accept=".pdf,application/pdf" id="spFile" class="file-input">
+    </div>
+
+    <div id="spConfig" class="screen">
+      <div class="card animate-in">
+        <div class="file-info">
+          <div class="file-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div>
+            <div class="file-name" id="spFileName"></div>
+            <div class="file-size" id="spFileSize"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card animate-in" style="animation-delay:0.08s;">
+        <div class="opt-label">Mode</div>
+        <div class="seg-options" id="spMode">
+          <div class="seg-btn selected" data-mode="extract">Extract pages</div>
+          <div class="seg-btn" data-mode="every">Every page</div>
+        </div>
+        <div id="spRangeWrap" style="margin-top:14px;">
+          <div class="opt-label" style="margin-bottom:8px;">Pages (e.g. 1-3, 5, 8-10)</div>
+          <input type="text" class="input" id="spRange" placeholder="1-3, 5, 8-10" inputmode="numeric">
+        </div>
+      </div>
+      <div id="spError" class="error-msg"></div>
+      <button class="btn btn-primary animate-in" style="animation-delay:0.16s;" id="btnSpRun">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M8 4v16M16 4v16M4 8h4m8 0h4M4 16h4m8 0h4"/></svg>
+        Split
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnSpChange">Choose Different File</button>
+    </div>
+
+    <div id="spProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="spProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="spProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="spProgressStatus">Splitting…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="spResult" class="screen">
+      <div class="card animate-in">
+        <div class="result-sizes">
+          <div class="result-col">
+            <div class="result-label">Output</div>
+            <div class="result-value" id="spResCount"></div>
+          </div>
+          <div class="result-arrow">·</div>
+          <div class="result-col">
+            <div class="result-label">Total</div>
+            <div class="result-value" id="spResSize" style="color:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary animate-in" id="btnSpDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="spDownloadLabel">Save to Files</span>
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnSpShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnSpAgain">Split Another</button>
+    </div>
+  </div>
+
+  <!-- ===================== UNLOCK TAB ===================== -->
+  <div id="tabUnlock" class="tab" data-tab="unlock">
+
+    <div id="ulSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnUlSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+        Select PDF
+      </button>
+      <p class="hint" style="text-align:center;">Removes copy / print / edit restrictions.<br>If password-protected, you'll be prompted.</p>
+      <input type="file" accept=".pdf,application/pdf" id="ulFile" class="file-input">
+    </div>
+
+    <div id="ulProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="ulProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="ulProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="ulProgressStatus">Unlocking…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ulResult" class="screen">
+      <div class="card animate-in" id="ulResCard">
+        <div class="file-info">
+          <div class="file-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>
+          </div>
+          <div>
+            <div class="file-name" id="ulResName"></div>
+            <div class="file-size" id="ulResStatus" style="color:var(--accent);">Restrictions removed</div>
+          </div>
+        </div>
+      </div>
+      <div id="ulError" class="error-msg"></div>
+      <button class="btn btn-primary animate-in" id="btnUlDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save to Files
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnUlShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnUlAgain">Unlock Another</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Password modal -->
+<div class="modal-backdrop" id="pwModal">
+  <div class="modal">
+    <div class="modal-title">Password required</div>
+    <div class="modal-sub" id="pwModalSub">Enter the password to unlock this PDF.</div>
+    <input type="password" class="input" id="pwInput" placeholder="Password" autocomplete="off">
+    <div class="editor-actions" style="margin-top:14px;">
+      <button class="btn btn-secondary" id="pwCancel">Cancel</button>
+      <button class="btn btn-primary" id="pwOk">Unlock</button>
     </div>
   </div>
 </div>
+
+<!-- Insert-from-PDF modal (Pages tab) -->
+<div class="modal-backdrop" id="insertModal">
+  <div class="modal">
+    <div class="modal-title">Insert pages</div>
+    <div class="modal-sub" id="insertModalSub">Which pages from this PDF?</div>
+    <input type="text" class="input" id="insertRange" placeholder="1-3, 5, 8-10" inputmode="numeric">
+    <p class="hint" style="margin-top:8px;">Leave blank to insert all pages.</p>
+    <div class="editor-actions" style="margin-top:14px;">
+      <button class="btn btn-secondary" id="insertCancel">Cancel</button>
+      <button class="btn btn-primary" id="insertOk">Insert</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom tab bar -->
+<nav class="tab-bar" id="tabBar">
+  <button class="tab-bar-item active" data-tab="compress">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path d="M4 8h16M4 16h16M8 12h8" stroke-linecap="round"/></svg>
+    <span class="label">Compress</span>
+  </button>
+  <button class="tab-bar-item" data-tab="pages">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9" stroke-linecap="round"/><line x1="9" y1="13" x2="15" y2="13" stroke-linecap="round"/></svg>
+    <span class="label">Pages</span>
+  </button>
+  <button class="tab-bar-item" data-tab="merge">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path d="M8 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8" stroke-linecap="round"/><path d="M3 7h6M3 12h6M3 17h6" stroke-linecap="round"/></svg>
+    <span class="label">Merge</span>
+  </button>
+  <button class="tab-bar-item" data-tab="split">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M6 3v6m0 6v6M18 3v6m0 6v6"/><path d="M3 12h18"/></svg>
+    <span class="label">Split</span>
+  </button>
+  <button class="tab-bar-item" data-tab="unlock">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1" stroke-linecap="round"/></svg>
+    <span class="label">Unlock</span>
+  </button>
+</nav>
 
 <canvas id="imgCanvas"></canvas>
 
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
-<script>
-(function() {
-  'use strict';
-
-  const PRESETS = {
-    high:   { maxDim: 3000, jpegQuality: 0.85 },
-    medium: { maxDim: 2000, jpegQuality: 0.65 },
-    low:    { maxDim: 1200, jpegQuality: 0.40 }
-  };
-
-  // State
-  let selectedFile = null;
-  let selectedQuality = 'medium';
-  let compressedBytes = null;
-  let compressedFileName = '';
-
-  // Elements
-  const $ = id => document.getElementById(id);
-  const screens = {
-    select: $('screenSelect'),
-    config: $('screenConfig'),
-    progress: $('screenProgress'),
-    result: $('screenResult')
-  };
-
-  function showScreen(name) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
-  }
-
-  function formatSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  }
-
-  function showError(containerId, msg) {
-    const el = $(containerId);
-    el.textContent = msg;
-    el.classList.add('visible');
-  }
-  function hideError(containerId) {
-    $(containerId).classList.remove('visible');
-  }
-
-  // File selection
-  $('btnSelect').addEventListener('click', () => $('fileInput').click());
-  $('btnChangeFile').addEventListener('click', () => {
-    $('fileInput').value = '';
-    $('fileInput').click();
-  });
-
-  $('fileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-      alert('Please select a PDF file.');
-      return;
-    }
-    selectedFile = file;
-    $('fileName').textContent = file.name;
-    $('fileSize').textContent = formatSize(file.size);
-    hideError('errorConfig');
-    showScreen('config');
-  });
-
-  // Quality selection
-  document.querySelectorAll('.quality-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedQuality = btn.dataset.quality;
-    });
-  });
-
-  // Progress helpers
-  const CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
-  function setProgress(pct, status) {
-    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
-    $('progressCircle').style.strokeDashoffset = offset;
-    $('progressPct').textContent = Math.round(pct) + '%';
-    if (status) $('progressStatus').textContent = status;
-  }
-
-  // Compress
-  $('btnCompress').addEventListener('click', async () => {
-    if (!selectedFile) return;
-    hideError('errorConfig');
-    showScreen('progress');
-    setProgress(0, 'Reading file...');
-
-    try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const inputBytes = new Uint8Array(arrayBuffer);
-      setProgress(10, 'Parsing PDF...');
-
-      const { PDFDocument, PDFName, PDFRawStream, PDFDict, PDFArray, PDFNumber } = PDFLib;
-      const pdfDoc = await PDFDocument.load(inputBytes, { ignoreEncryption: true });
-
-      // Strip metadata
-      setProgress(15, 'Stripping metadata...');
-      pdfDoc.setTitle('');
-      pdfDoc.setAuthor('');
-      pdfDoc.setSubject('');
-      pdfDoc.setKeywords([]);
-      pdfDoc.setCreator('');
-      pdfDoc.setProducer('');
-
-      // Process images
-      setProgress(20, 'Scanning for images...');
-      const preset = PRESETS[selectedQuality];
-      const canvas = $('imgCanvas');
-      const ctx = canvas.getContext('2d');
-
-      // Enumerate all indirect objects looking for image XObjects
-      const enumeratedObjects = pdfDoc.context.enumerateIndirectObjects();
-      const imageObjects = [];
-
-      for (const [ref, obj] of enumeratedObjects) {
-        try {
-          if (obj instanceof PDFLib.PDFRawStream || (obj && obj.dict)) {
-            const dict = obj.dict || obj;
-            if (dict && typeof dict.get === 'function') {
-              const subtype = dict.get(PDFName.of('Subtype'));
-              if (subtype && subtype.toString() === '/Image') {
-                imageObjects.push({ ref, stream: obj, dict });
-              }
-            }
-          }
-        } catch (_) { /* skip */ }
-      }
-
-      const totalImages = imageObjects.length;
-      let processedImages = 0;
-      let compressedImageCount = 0;
-
-      for (const imgObj of imageObjects) {
-        processedImages++;
-        const pct = 20 + (processedImages / Math.max(totalImages, 1)) * 60;
-        setProgress(pct, `Processing image ${processedImages} of ${totalImages}...`);
-
-        try {
-          const dict = imgObj.dict;
-          const width = dict.get(PDFName.of('Width'));
-          const height = dict.get(PDFName.of('Height'));
-          if (!width || !height) continue;
-
-          const w = width instanceof PDFNumber ? width.asNumber() : (typeof width.value === 'function' ? width.value() : parseInt(width.toString()));
-          const h = height instanceof PDFNumber ? height.asNumber() : (typeof height.value === 'function' ? height.value() : parseInt(height.toString()));
-
-          if (isNaN(w) || isNaN(h) || w < 10 || h < 10) continue;
-
-          // Get filter info
-          const filter = dict.get(PDFName.of('Filter'));
-          const filterStr = filter ? filter.toString() : '';
-          const colorSpace = dict.get(PDFName.of('ColorSpace'));
-          const colorSpaceStr = colorSpace ? colorSpace.toString() : '/DeviceRGB';
-          const bitsPerComponent = dict.get(PDFName.of('BitsPerComponent'));
-          const bpc = bitsPerComponent ? (bitsPerComponent instanceof PDFNumber ? bitsPerComponent.asNumber() : parseInt(bitsPerComponent.toString())) : 8;
-
-          // Get raw stream contents
-          let rawData;
-          if (imgObj.stream && imgObj.stream.contents) {
-            rawData = imgObj.stream.contents;
-          } else if (imgObj.stream && imgObj.stream.getContents) {
-            rawData = imgObj.stream.getContents();
-          } else {
-            continue;
-          }
-
-          if (!rawData || rawData.length < 100) continue;
-
-          let imageData = null;
-
-          // Handle DCTDecode (JPEG) — data is already a JPEG
-          if (filterStr.includes('DCTDecode')) {
-            // For JPEG images, decode via browser
-            try {
-              const blob = new Blob([rawData], { type: 'image/jpeg' });
-              const imgBitmap = await createImageBitmap(blob);
-              imageData = { bitmap: imgBitmap, origW: imgBitmap.width, origH: imgBitmap.height };
-            } catch (_) { continue; }
-          }
-          // Handle FlateDecode — raw pixel data compressed with zlib
-          else if (filterStr.includes('FlateDecode') && !filterStr.includes('CCITTFaxDecode') && !filterStr.includes('JBIG2Decode')) {
-            try {
-              const decoded = pako.inflate(rawData);
-              // Determine channels
-              let channels = 3;
-              if (colorSpaceStr.includes('Gray') || colorSpaceStr.includes('CalGray')) channels = 1;
-              else if (colorSpaceStr.includes('CMYK')) channels = 4;
-              else if (colorSpaceStr.includes('RGB') || colorSpaceStr.includes('CalRGB')) channels = 3;
-
-              const expectedLen = w * h * channels * (bpc / 8);
-              // Allow some slack for row padding
-              if (decoded.length < expectedLen * 0.8 || decoded.length > expectedLen * 1.5) continue;
-
-              // Build ImageData
-              const pixelData = new Uint8ClampedArray(w * h * 4);
-              for (let i = 0; i < w * h; i++) {
-                if (channels === 3) {
-                  pixelData[i*4]   = decoded[i*3];
-                  pixelData[i*4+1] = decoded[i*3+1];
-                  pixelData[i*4+2] = decoded[i*3+2];
-                  pixelData[i*4+3] = 255;
-                } else if (channels === 1) {
-                  const v = decoded[i];
-                  pixelData[i*4] = pixelData[i*4+1] = pixelData[i*4+2] = v;
-                  pixelData[i*4+3] = 255;
-                } else if (channels === 4) {
-                  // CMYK to RGB
-                  const c = decoded[i*4] / 255;
-                  const m = decoded[i*4+1] / 255;
-                  const y = decoded[i*4+2] / 255;
-                  const k = decoded[i*4+3] / 255;
-                  pixelData[i*4]   = 255 * (1-c) * (1-k);
-                  pixelData[i*4+1] = 255 * (1-m) * (1-k);
-                  pixelData[i*4+2] = 255 * (1-y) * (1-k);
-                  pixelData[i*4+3] = 255;
-                } else {
-                  continue;
-                }
-              }
-              const imgData = new ImageData(pixelData, w, h);
-              canvas.width = w;
-              canvas.height = h;
-              ctx.putImageData(imgData, 0, 0);
-              const bmp = await createImageBitmap(canvas);
-              imageData = { bitmap: bmp, origW: w, origH: h };
-            } catch (_) { continue; }
-          }
-          // No filter — raw pixels
-          else if (!filterStr || filterStr === '/' || filterStr === '[]') {
-            try {
-              let channels = 3;
-              if (colorSpaceStr.includes('Gray')) channels = 1;
-              const pixelData = new Uint8ClampedArray(w * h * 4);
-              for (let i = 0; i < w * h; i++) {
-                if (channels === 3) {
-                  pixelData[i*4]   = rawData[i*3];
-                  pixelData[i*4+1] = rawData[i*3+1];
-                  pixelData[i*4+2] = rawData[i*3+2];
-                  pixelData[i*4+3] = 255;
-                } else {
-                  pixelData[i*4] = pixelData[i*4+1] = pixelData[i*4+2] = rawData[i];
-                  pixelData[i*4+3] = 255;
-                }
-              }
-              const imgData = new ImageData(pixelData, w, h);
-              canvas.width = w;
-              canvas.height = h;
-              ctx.putImageData(imgData, 0, 0);
-              const bmp = await createImageBitmap(canvas);
-              imageData = { bitmap: bmp, origW: w, origH: h };
-            } catch (_) { continue; }
-          } else {
-            // Unsupported filter
-            continue;
-          }
-
-          if (!imageData) continue;
-
-          // Determine new dimensions
-          let newW = imageData.origW;
-          let newH = imageData.origH;
-          const maxDim = preset.maxDim;
-
-          if (newW > maxDim || newH > maxDim) {
-            const scale = maxDim / Math.max(newW, newH);
-            newW = Math.round(newW * scale);
-            newH = Math.round(newH * scale);
-          }
-
-          // Skip if image is already small and was JPEG with similar or smaller size
-          const minWorthwhile = filterStr.includes('DCTDecode') && newW >= imageData.origW && newH >= imageData.origH;
-
-          // Draw to canvas at new size
-          canvas.width = newW;
-          canvas.height = newH;
-          ctx.clearRect(0, 0, newW, newH);
-          ctx.drawImage(imageData.bitmap, 0, 0, newW, newH);
-
-          // Encode as JPEG
-          const jpegDataUrl = canvas.toDataURL('image/jpeg', preset.jpegQuality);
-          const jpegBase64 = jpegDataUrl.split(',')[1];
-          const jpegBinary = Uint8Array.from(atob(jpegBase64), c => c.charCodeAt(0));
-
-          // Only replace if we actually reduced size or are resizing
-          if (minWorthwhile && jpegBinary.length >= rawData.length * 0.95) continue;
-
-          // Replace the stream in the PDF object
-          // Build a new dict for this image
-          const newDict = imgObj.stream.dict.clone(pdfDoc.context);
-          newDict.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
-          newDict.set(PDFName.of('Width'), PDFLib.PDFNumber.of(newW));
-          newDict.set(PDFName.of('Height'), PDFLib.PDFNumber.of(newH));
-          newDict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
-          newDict.set(PDFName.of('BitsPerComponent'), PDFLib.PDFNumber.of(8));
-          newDict.set(PDFName.of('Length'), PDFLib.PDFNumber.of(jpegBinary.length));
-          // Remove decode params that don't apply to JPEG
-          newDict.delete(PDFName.of('DecodeParms'));
-          newDict.delete(PDFName.of('Predictor'));
-
-          const newStream = PDFLib.PDFRawStream.of(newDict, jpegBinary);
-          pdfDoc.context.assign(imgObj.ref, newStream);
-
-          compressedImageCount++;
-          imageData.bitmap.close && imageData.bitmap.close();
-        } catch (imgErr) {
-          // Skip this image and continue
-          continue;
-        }
-      }
-
-      // Save with object streams
-      setProgress(85, 'Saving compressed PDF...');
-      const savedBytes = await pdfDoc.save({ useObjectStreams: true });
-      compressedBytes = savedBytes;
-
-      setProgress(95, 'Finalizing...');
-
-      // Build result
-      const origSize = selectedFile.size;
-      const newSize = compressedBytes.length;
-      const reduction = origSize > 0 ? ((origSize - newSize) / origSize * 100) : 0;
-      const saved = origSize - newSize;
-
-      $('resultOriginal').textContent = formatSize(origSize);
-      $('resultCompressed').textContent = formatSize(newSize);
-
-      if (reduction > 0) {
-        $('resultRatio').textContent = reduction.toFixed(1) + '%';
-        $('resultSaved').textContent = formatSize(saved) + ' saved';
-      } else {
-        $('resultRatio').textContent = '0%';
-        $('resultSaved').textContent = 'File could not be reduced further';
-      }
-
-      // Prepare filename
-      const baseName = selectedFile.name.replace(/\.pdf$/i, '');
-      compressedFileName = baseName + '_compressed.pdf';
-
-      setProgress(100, 'Done!');
-      await new Promise(r => setTimeout(r, 400));
-      hideError('errorResult');
-      showScreen('result');
-
-    } catch (err) {
-      console.error('Compression error:', err);
-      showScreen('config');
-      showError('errorConfig', 'Compression failed: ' + (err.message || 'Unknown error. The PDF may be encrypted or malformed.'));
-    }
-  });
-
-  // Share (native iOS/Android share sheet — email, AirDrop, Messages, Drive, Dropbox, etc.)
-  $('btnShare').addEventListener('click', async () => {
-    if (!compressedBytes) return;
-    try {
-      const file = new File([compressedBytes], compressedFileName, { type: 'application/pdf' });
-
-      const shareData = { files: [file] };
-      if (navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback: trigger download if Web Share API not available
-        triggerDownload();
-      }
-    } catch (err) {
-      // User cancelled share is not an error
-      if (err.name !== 'AbortError') {
-        showError('errorResult', 'Share failed: ' + err.message);
-      }
-    }
-  });
-
-  // Download (save to device)
-  function triggerDownload() {
-    if (!compressedBytes) return;
-    const blob = new Blob([compressedBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = compressedFileName;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    }, 1000);
-  }
-
-  $('btnDownload').addEventListener('click', () => {
-    try {
-      triggerDownload();
-    } catch (err) {
-      showError('errorResult', 'Download failed: ' + err.message);
-    }
-  });
-
-  // Compress Another
-  $('btnAnother').addEventListener('click', () => {
-    selectedFile = null;
-    compressedBytes = null;
-    compressedFileName = '';
-    $('fileInput').value = '';
-    setProgress(0, 'Preparing...');
-    showScreen('select');
-  });
-
-})();
-</script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
