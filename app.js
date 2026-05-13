@@ -1225,6 +1225,292 @@
   })();
 
   // ---------------------------------------------------------------------------
+  // Redact tab — true text removal via mupdf.js (MuPDF compiled to WASM)
+  // ---------------------------------------------------------------------------
+
+  // Lazy-load mupdf.js (~10MB WASM payload) on demand.
+  let mupdfReady = null;
+  function ensureMupdf() {
+    if (mupdfReady) return mupdfReady;
+    mupdfReady = (async () => {
+      // mupdf is an ESM package — dynamic import works for module CDN URLs.
+      // jsdelivr resolves the package.json "module" field correctly for us.
+      const mod = await import('https://cdn.jsdelivr.net/npm/mupdf@1.3.5/dist/mupdf.js');
+      return mod;
+    })();
+    return mupdfReady;
+  }
+
+  const redact = (() => {
+    let selectedFile = null;
+    let sourceBytes = null;
+    let mupdf = null;          // loaded module
+    let pdfDoc = null;         // mupdfjs.PDFDocument
+    let pageCount = 0;
+    let selectedColor = 'black';
+    let outputBytes = null;
+    let outputFileName = '';
+
+    $('btnRdSelect').addEventListener('click', () => $('rdFile').click());
+    $('btnRdChange').addEventListener('click', () => { $('rdFile').value = ''; $('rdFile').click(); });
+
+    $('rdFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+        alert('Please select a PDF file.');
+        return;
+      }
+      selectedFile = file;
+
+      // Load mupdf if not yet loaded
+      if (!mupdf) {
+        setScreen('rd', 'Loading');
+        $('rdLoadingStatus').textContent = 'Downloading redaction engine…';
+        try {
+          mupdf = await ensureMupdf();
+          $('rdLoadingStatus').textContent = 'Parsing PDF…';
+        } catch (err) {
+          console.error(err);
+          setScreen('rd', 'Select');
+          alert('Could not load redaction engine: ' + err.message
+            + '\n\nCheck your network connection and try again.');
+          return;
+        }
+      }
+
+      // Parse the PDF
+      try {
+        const buf = await file.arrayBuffer();
+        sourceBytes = new Uint8Array(buf);
+        pdfDoc = mupdf.PDFDocument.openDocument(sourceBytes, 'application/pdf');
+        pageCount = pdfDoc.countPages();
+      } catch (err) {
+        console.error(err);
+        setScreen('rd', 'Select');
+        alert('Could not open PDF: ' + err.message);
+        return;
+      }
+
+      $('rdFileName').textContent = file.name;
+      $('rdFileSize').textContent = `${formatSize(file.size)} · ${pageCount} page${pageCount !== 1 ? 's' : ''}`;
+      $('rdMatches').style.display = 'none';
+      $('rdTerms').value = '';
+      hideError('rdError');
+      setScreen('rd', 'Config');
+    });
+
+    // Color swatch picker
+    document.querySelectorAll('#rdColor .color-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        document.querySelectorAll('#rdColor .color-swatch').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+        selectedColor = sw.dataset.color;
+      });
+    });
+
+    function getTerms() {
+      return $('rdTerms').value
+        .split('\n')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+    }
+
+    // Find matches (returns Map<term, [{pageIdx, quads}]>)
+    function findMatches(doc, terms) {
+      const matches = new Map();
+      for (const term of terms) matches.set(term, []);
+
+      const total = doc.countPages();
+      for (let i = 0; i < total; i++) {
+        const page = doc.loadPage(i);
+        try {
+          for (const term of terms) {
+            try {
+              const hits = page.search(term, 500);
+              if (hits && hits.length) {
+                for (const hit of hits) {
+                  matches.get(term).push({ pageIdx: i, quads: hit });
+                }
+              }
+            } catch (_) { /* skip term */ }
+          }
+        } finally {
+          if (page.destroy) page.destroy();
+        }
+      }
+      return matches;
+    }
+
+    $('btnRdPreview').addEventListener('click', () => {
+      const terms = getTerms();
+      if (!terms.length) { showError('rdError', 'Enter at least one term.'); return; }
+      if (!pdfDoc) return;
+      hideError('rdError');
+
+      try {
+        const matches = findMatches(pdfDoc, terms);
+        const list = $('rdMatches');
+        list.innerHTML = '';
+        let total = 0;
+        for (const term of terms) {
+          const count = matches.get(term).length;
+          total += count;
+          const row = document.createElement('div');
+          row.className = 'match-row' + (count === 0 ? ' zero' : '');
+          row.innerHTML = `<span class="term">${escapeHtml(term)}</span><span class="count">${count}</span>`;
+          list.appendChild(row);
+        }
+        const totalRow = document.createElement('div');
+        totalRow.className = 'match-row';
+        totalRow.style.borderTop = '1px solid rgba(255,255,255,0.06)';
+        totalRow.style.paddingTop = '6px';
+        totalRow.style.marginTop = '2px';
+        totalRow.innerHTML = `<span class="term" style="color:var(--text-dim)">Total</span><span class="count">${total}</span>`;
+        list.appendChild(totalRow);
+        list.style.display = 'flex';
+      } catch (err) {
+        console.error(err);
+        showError('rdError', 'Preview failed: ' + err.message);
+      }
+    });
+
+    function setProg(pct, status) {
+      setRing($('rdProgressCircle'), $('rdProgressPct'), $('rdProgressStatus'), pct, status);
+    }
+
+    $('btnRdRun').addEventListener('click', async () => {
+      const terms = getTerms();
+      if (!terms.length) { showError('rdError', 'Enter at least one term.'); return; }
+      if (!pdfDoc || !mupdf) return;
+      hideError('rdError');
+
+      setScreen('rd', 'Progress');
+      setProg(5, 'Finding matches…');
+
+      try {
+        // Re-open the doc fresh so we can apply destructive redactions without
+        // worrying about the preview-pass state.
+        const doc = mupdf.PDFDocument.openDocument(sourceBytes, 'application/pdf');
+        const total = doc.countPages();
+        const fillColor = selectedColor === 'white' ? [1, 1, 1] : [0, 0, 0];
+        let totalMatches = 0;
+
+        for (let i = 0; i < total; i++) {
+          const page = doc.loadPage(i);
+          try {
+            let pageHasMatch = false;
+            for (const term of terms) {
+              let hits;
+              try { hits = page.search(term, 500); } catch (_) { continue; }
+              if (!hits || !hits.length) continue;
+              for (const hit of hits) {
+                // hit is an array of quads (one per line of wrapped text)
+                for (const quad of hit) {
+                  const rect = quadToRect(quad);
+                  try {
+                    const annot = page.addRedactionAnnotation
+                      ? page.addRedactionAnnotation(rect)
+                      : (page.createAnnotation
+                          ? page.createAnnotation('Redact')
+                          : null);
+                    if (annot) {
+                      if (annot.setRect) annot.setRect(rect);
+                      if (annot.setColor) annot.setColor(fillColor);
+                      if (annot.setInteriorColor) annot.setInteriorColor(fillColor);
+                    }
+                    totalMatches++;
+                    pageHasMatch = true;
+                  } catch (e) {
+                    console.warn('addRedactionAnnotation failed', e);
+                  }
+                }
+              }
+            }
+            if (pageHasMatch) {
+              // Apply redactions on this page — true text removal
+              try {
+                page.applyRedactions(selectedColor !== 'white', 0, 0);
+              } catch (e) {
+                // Fallback signature
+                try { page.applyRedactions(); } catch (e2) { console.warn('applyRedactions failed', e2); }
+              }
+            }
+            setProg(5 + (i + 1) / total * 85, `Page ${i + 1} of ${total}…`);
+          } finally {
+            if (page.destroy) page.destroy();
+          }
+        }
+
+        setProg(92, 'Saving…');
+        const buf = doc.saveToBuffer ? doc.saveToBuffer('') : doc.save();
+        const savedBytes = buf.asUint8Array ? buf.asUint8Array() : new Uint8Array(buf);
+        outputBytes = savedBytes;
+        if (doc.destroy) doc.destroy();
+
+        const base = selectedFile.name.replace(/\.pdf$/i, '');
+        outputFileName = base + '_redacted.pdf';
+
+        $('rdResMatches').textContent = totalMatches;
+        $('rdResSize').textContent = formatSize(savedBytes.length);
+
+        setProg(100, 'Done!');
+        await new Promise(r => setTimeout(r, 300));
+        setScreen('rd', 'Result');
+      } catch (err) {
+        console.error(err);
+        setScreen('rd', 'Config');
+        showError('rdError', 'Redaction failed: ' + (err.message || 'Unknown error'));
+      }
+    });
+
+    function quadToRect(q) {
+      // mupdf quads may be returned as objects with ul/ur/ll/lr points,
+      // or as 8-element arrays [ulx, uly, urx, ury, llx, lly, lrx, lry].
+      if (q && q.ul && q.lr) {
+        return [
+          Math.min(q.ul.x, q.ll.x),
+          Math.min(q.ul.y, q.ur.y),
+          Math.max(q.ur.x, q.lr.x),
+          Math.max(q.ll.y, q.lr.y),
+        ];
+      }
+      if (Array.isArray(q) && q.length === 8) {
+        const xs = [q[0], q[2], q[4], q[6]];
+        const ys = [q[1], q[3], q[5], q[7]];
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      }
+      // Already a rect [x0,y0,x1,y1]?
+      if (Array.isArray(q) && q.length === 4) return q;
+      // Last resort
+      return [0, 0, 0, 0];
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    $('btnRdDownload').addEventListener('click', () => {
+      if (outputBytes) downloadBlob(outputBytes, outputFileName);
+    });
+    $('btnRdShare').addEventListener('click', async () => {
+      if (outputBytes) {
+        try { await shareFile(outputBytes, outputFileName); } catch (_) {}
+      }
+    });
+    $('btnRdAgain').addEventListener('click', () => {
+      if (pdfDoc && pdfDoc.destroy) pdfDoc.destroy();
+      selectedFile = null; sourceBytes = null; pdfDoc = null;
+      pageCount = 0; outputBytes = null;
+      $('rdFile').value = '';
+      $('rdTerms').value = '';
+      $('rdMatches').style.display = 'none';
+      setScreen('rd', 'Select');
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
   // Unlock tab
   // ---------------------------------------------------------------------------
 

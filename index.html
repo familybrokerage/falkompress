@@ -685,28 +685,29 @@ body::after {
 }
 .tab-bar-item {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   color: var(--text-dim);
   font-family: var(--font-sans);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 11px;
   transition: color 0.2s, background 0.2s, transform 0.15s;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  padding: 4px 2px;
+  padding: 4px 1px;
   position: relative;
 }
 .tab-bar-item svg {
-  width: 22px; height: 22px;
+  width: 20px; height: 20px;
   stroke: currentColor;
   transition: transform 0.2s;
 }
@@ -777,6 +778,107 @@ body::after {
 
 /* Scroll lock when modal visible */
 body.modal-open { overflow: hidden; }
+
+/* ----- Redact-specific ----- */
+.input.textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  white-space: pre;
+  overflow: auto;
+}
+.match-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card-alt);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.match-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+}
+.match-row .term {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+.match-row .count {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.match-row.zero .count { color: var(--text-faint); }
+.color-options {
+  display: flex;
+  gap: 10px;
+}
+.color-swatch {
+  flex: 1;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.color-swatch.black { background: #0a0a0a; }
+.color-swatch.white { background: #f5f5f5; }
+.color-swatch.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.color-swatch::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 0; right: 0; bottom: -22px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.color-swatch.selected::after { color: var(--accent); }
+.color-options-wrap { margin-bottom: 30px; }
+
+/* Loading overlay for WASM init */
+.wasm-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 20px;
+}
+.wasm-spinner {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(0, 212, 170, 0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.wasm-status {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  font-family: var(--font-mono);
+}
 </style>
 </head>
 <body>
@@ -1098,6 +1200,105 @@ body.modal-open { overflow: hidden; }
     </div>
   </div>
 
+  <!-- ===================== REDACT TAB ===================== -->
+  <div id="tabRedact" class="tab" data-tab="redact">
+
+    <div id="rdSelect" class="screen active">
+      <button class="btn btn-primary pulse" id="btnRdSelect" style="margin-bottom:14px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="7" y="13" width="10" height="3" fill="currentColor" stroke="none"/></svg>
+        Select PDF
+      </button>
+      <p class="hint" style="text-align:center;">Permanently remove text matching your search terms.<br>True redaction — not just visual coverage.</p>
+      <input type="file" accept=".pdf,application/pdf" id="rdFile" class="file-input">
+    </div>
+
+    <div id="rdLoading" class="screen">
+      <div class="card wasm-loading">
+        <div class="wasm-spinner"></div>
+        <div class="wasm-status" id="rdLoadingStatus">Loading redaction engine…</div>
+        <p class="hint" style="text-align:center;max-width:280px;">One-time download (~10&nbsp;MB).<br>Cached for next time.</p>
+      </div>
+    </div>
+
+    <div id="rdConfig" class="screen">
+      <div class="card animate-in">
+        <div class="file-info">
+          <div class="file-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="#00d4aa" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div>
+            <div class="file-name" id="rdFileName"></div>
+            <div class="file-size" id="rdFileSize"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card animate-in" style="animation-delay:0.08s;">
+        <div class="opt-label">Terms to redact (one per line)</div>
+        <textarea class="input textarea" id="rdTerms" placeholder="John Smith&#10;555-12-3456&#10;confidential" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <div id="rdMatches" class="match-list" style="display:none;"></div>
+        <button class="btn btn-secondary" style="margin-top:14px;" id="btnRdPreview">
+          Preview Matches
+        </button>
+      </div>
+
+      <div class="card animate-in color-options-wrap" style="animation-delay:0.16s;">
+        <div class="opt-label">Box color</div>
+        <div class="color-options" id="rdColor">
+          <div class="color-swatch black selected" data-color="black" data-label="Black"></div>
+          <div class="color-swatch white" data-color="white" data-label="White"></div>
+        </div>
+      </div>
+
+      <div id="rdError" class="error-msg"></div>
+      <button class="btn btn-primary animate-in" style="animation-delay:0.20s;" id="btnRdRun">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><rect x="3" y="8" width="18" height="8" rx="1" fill="currentColor" stroke="none"/></svg>
+        Redact
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnRdChange">Choose Different File</button>
+    </div>
+
+    <div id="rdProgress" class="screen">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="progress-wrap">
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+              <circle class="progress-ring-fg" id="rdProgressCircle" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+            </svg>
+            <div class="progress-pct" id="rdProgressPct">0%</div>
+          </div>
+          <div class="progress-status" id="rdProgressStatus">Redacting…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rdResult" class="screen">
+      <div class="card animate-in">
+        <div class="result-sizes">
+          <div class="result-col">
+            <div class="result-label">Removed</div>
+            <div class="result-value" id="rdResMatches"></div>
+          </div>
+          <div class="result-arrow">·</div>
+          <div class="result-col">
+            <div class="result-label">Size</div>
+            <div class="result-value" id="rdResSize" style="color:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary animate-in" id="btnRdDownload">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save to Files
+      </button>
+      <button class="btn btn-secondary" style="margin-top:10px;" id="btnRdShare">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn btn-outline" style="margin-top:10px;" id="btnRdAgain">Redact Another</button>
+    </div>
+  </div>
+
   <!-- ===================== UNLOCK TAB ===================== -->
   <div id="tabUnlock" class="tab" data-tab="unlock">
 
@@ -1196,6 +1397,10 @@ body.modal-open { overflow: hidden; }
   <button class="tab-bar-item" data-tab="split">
     <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M6 3v6m0 6v6M18 3v6m0 6v6"/><path d="M3 12h18"/></svg>
     <span class="label">Split</span>
+  </button>
+  <button class="tab-bar-item" data-tab="redact">
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="9" width="18" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M3 6h18M3 18h18" stroke-linecap="round"/></svg>
+    <span class="label">Redact</span>
   </button>
   <button class="tab-bar-item" data-tab="unlock">
     <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1" stroke-linecap="round"/></svg>
